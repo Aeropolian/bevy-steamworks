@@ -17,7 +17,7 @@ bevy_log = "0.12"
 bevy_app = "0.12"
 bevy_ecs = "0.12"
 bevy_utils = "0.12"
-steamworks = "0.10"
+steamworks = { git = "https://github.com/Noxime/steamworks-rs", branch = "master" }
 
 [dev-dependencies]
 bevy = "0.12"

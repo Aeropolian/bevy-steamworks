@@ -76,14 +76,13 @@ pub use steamworks::{
     AppIDs, AppId, Apps, AuthSessionError, AuthSessionValidateError, AuthTicket, Callback,
     CallbackHandle, ChatMemberStateChange, ClientManager, CreateQueryError, FileType, Friend,
     FriendFlags, FriendGame, FriendState, Friends, GameId, Input, InstallInfo, InvalidErrorCode,
-    ItemDetailsQuery, ItemListDetailsQuery, ItemState, Leaderboard, LeaderboardDataRequest,
-    LeaderboardDisplayType, LeaderboardEntry, LeaderboardScoreUploaded, LeaderboardSortMethod,
-    LobbyId, LobbyType, Matchmaking, Networking, NotificationPosition, PersonaChange,
-    PublishedFileId, QueryResult, QueryResults, RemoteStorage, SResult, SendType, Server,
-    ServerManager, ServerMode, SingleClient, SteamError, SteamFile, SteamFileInfo, SteamFileReader,
-    SteamFileWriter, SteamId, UGCStatisticType, UGCType, UpdateHandle, UpdateStatus,
-    UpdateWatchHandle, UploadScoreMethod, User, UserList, UserListOrder, UserListQuery, UserStats,
-    Utils, RESULTS_PER_PAGE, UGC,
+    ItemState, Leaderboard, LeaderboardDataRequest, LeaderboardDisplayType, LeaderboardEntry,
+    LeaderboardScoreUploaded, LeaderboardSortMethod, LobbyId, LobbyType, Matchmaking, Networking,
+    NotificationPosition, PersonaChange, PublishedFileId, QueryResult, QueryResults, RemoteStorage,
+    SResult, SendType, Server, ServerManager, ServerMode, SingleClient, SteamError, SteamFile,
+    SteamFileInfo, SteamFileReader, SteamFileWriter, SteamId, SteamItem, SteamItemInstance,
+    SteamItemPrice, UGCStatisticType, UGCType, UpdateHandle, UpdateStatus, UpdateWatchHandle,
+    UploadScoreMethod, User, UserList, UserListOrder, UserStats, Utils, RESULTS_PER_PAGE, UGC,
 };
 
 #[derive(Resource)]
@@ -98,14 +97,24 @@ struct SteamEvents {
 pub enum SteamworksEvent {
     AuthSessionTicketResponse(steamworks::AuthSessionTicketResponse),
     DownloadItemResult(steamworks::DownloadItemResult),
+    FakeIPResult(steamworks::networking_sockets::FakeIPResult),
     GameLobbyJoinRequested(steamworks::GameLobbyJoinRequested),
+    GamepadTextInputDismissed(steamworks::GamepadTextInputDismissed),
+    FloatingGamepadTextInputDismissed(steamworks::FloatingGamepadTextInputDismissed),
     LobbyChatUpdate(steamworks::LobbyChatUpdate),
+    LobbyChatMsg(steamworks::LobbyChatMsg),
+    LobbyDataUpdate(steamworks::LobbyDataUpdate),
+    NetConnectionStatusChanged(steamworks::networking_types::NetConnectionStatusChanged),
     P2PSessionConnectFail(steamworks::P2PSessionConnectFail),
     P2PSessionRequest(steamworks::P2PSessionRequest),
     PersonaStateChange(steamworks::PersonaStateChange),
+    RemotePlayConnected(steamworks::RemotePlayConnected),
+    RemotePlayDisconnected(steamworks::RemotePlayDisconnected),
     SteamServerConnectFailure(steamworks::SteamServerConnectFailure),
     SteamServersConnected(steamworks::SteamServersConnected),
     SteamServersDisconnected(steamworks::SteamServersDisconnected),
+    TicketForWebApiResponse(steamworks::TicketForWebApiResponse),
+    MicroTxnAuthorizationResponse(steamworks::MicroTxnAuthorizationResponse),
     UserAchievementStored(steamworks::UserAchievementStored),
     UserStatsReceived(steamworks::UserStatsReceived),
     UserStatsStored(steamworks::UserStatsStored),
@@ -113,14 +122,14 @@ pub enum SteamworksEvent {
 }
 
 macro_rules! register_event_callbacks {
-    ($client: ident, $($event_name: ident),+) => {
+    ($client: ident, $($event_name:ident: $event_ty:ty),+ $(,)?) => {
         {
             let pending = Arc::new(SyncUnsafeCell::new(Vec::new()));
             SteamEvents {
                 _callbacks: vec![
                     $({
                         let pending_in = pending.clone();
-                        $client.register_callback::<steamworks::$event_name, _>(move |evt| {
+                        $client.register_callback::<$event_ty, _>(move |evt| {
                             // SAFETY: The callback is only called during `run_steam_callbacks` which cannot run
                             // while any of the flush_events systems are running. This cannot alias.
                             unsafe {
@@ -174,20 +183,30 @@ impl Plugin for SteamworksPlugin {
                 app.insert_resource(Client(client.clone()))
                     .insert_resource(register_event_callbacks!(
                         client,
-                        AuthSessionTicketResponse,
-                        DownloadItemResult,
-                        GameLobbyJoinRequested,
-                        LobbyChatUpdate,
-                        P2PSessionConnectFail,
-                        P2PSessionRequest,
-                        PersonaStateChange,
-                        SteamServerConnectFailure,
-                        SteamServersConnected,
-                        SteamServersDisconnected,
-                        UserAchievementStored,
-                        UserStatsReceived,
-                        UserStatsStored,
-                        ValidateAuthTicketResponse
+                        AuthSessionTicketResponse: steamworks::AuthSessionTicketResponse,
+                        DownloadItemResult: steamworks::DownloadItemResult,
+                        FakeIPResult: steamworks::networking_sockets::FakeIPResult,
+                        GameLobbyJoinRequested: steamworks::GameLobbyJoinRequested,
+                        GamepadTextInputDismissed: steamworks::GamepadTextInputDismissed,
+                        FloatingGamepadTextInputDismissed: steamworks::FloatingGamepadTextInputDismissed,
+                        LobbyChatUpdate: steamworks::LobbyChatUpdate,
+                        LobbyChatMsg: steamworks::LobbyChatMsg,
+                        LobbyDataUpdate: steamworks::LobbyDataUpdate,
+                        NetConnectionStatusChanged: steamworks::networking_types::NetConnectionStatusChanged,
+                        P2PSessionConnectFail: steamworks::P2PSessionConnectFail,
+                        P2PSessionRequest: steamworks::P2PSessionRequest,
+                        PersonaStateChange: steamworks::PersonaStateChange,
+                        RemotePlayConnected: steamworks::RemotePlayConnected,
+                        RemotePlayDisconnected: steamworks::RemotePlayDisconnected,
+                        SteamServerConnectFailure: steamworks::SteamServerConnectFailure,
+                        SteamServersConnected: steamworks::SteamServersConnected,
+                        SteamServersDisconnected: steamworks::SteamServersDisconnected,
+                        TicketForWebApiResponse: steamworks::TicketForWebApiResponse,
+                        MicroTxnAuthorizationResponse: steamworks::MicroTxnAuthorizationResponse,
+                        UserAchievementStored: steamworks::UserAchievementStored,
+                        UserStatsReceived: steamworks::UserStatsReceived,
+                        UserStatsStored: steamworks::UserStatsStored,
+                        ValidateAuthTicketResponse: steamworks::ValidateAuthTicketResponse,
                     ))
                     .insert_non_send_resource(single)
                     .add_event::<SteamworksEvent>()

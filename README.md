@@ -12,7 +12,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bevy-steamworks = "0.10"
+bevy-steamworks = "0.11"
 ```
 
 The steamworks crate comes bundled with the redistributable dynamic libraries
@@ -44,24 +44,19 @@ use bevy_steamworks::*;
 fn main() {
   // Use the demo Steam AppId for SpaceWar
   App::new()
+      // it is important to add the plugin before `RenderPlugin` that comes with `DefaultPlugins`
+      .add_plugins(SteamworksPlugin::init_app(480).unwrap())
       .add_plugins(DefaultPlugins)
-      .add_plugins(SteamworksPlugin::new(AppId(480)))
       .run()
 }
 ```
 
-The plugin adds `steamworks::Client` as a Bevy ECS resource, which can be
+The plugin adds `Client` as a Bevy ECS resource, which can be
 accessed like any other resource in Bevy. The client implements `Send` and `Sync`
-and can be used to make requests via the SDK from any of Bevy's threads. However,
-any asynchronous callbacks from Steam will only run on the main thread.
+and can be used to make requests via the SDK from any of Bevy's threads.
 
 The plugin will automatically call `SingleClient::run_callbacks` on the Bevy
-main thread every frame in `First`, so there is no need to run it
-manually.
-
-**NOTE**: If the plugin fails to initialize (i.e. `Client::init()` fails and
-returns an error, an error wil lbe logged (via `bevy_log`), but it will not
-panic. In this case, it may be necessary to use `Option<Res<Client>>` instead.
+every tick in the `First` schedule, so there is no need to run it manually.
 
 All callbacks are forwarded as `Events` and can be listened to in the a
 Bevy idiomatic way:
@@ -79,8 +74,9 @@ fn steam_system(steam_client: Res<Client>) {
 fn main() {
   // Use the demo Steam AppId for SpaceWar
   App::new()
+      // it is important to add the plugin before `RenderPlugin` that comes with `DefaultPlugins`
+      .add_plugins(SteamworksPlugin::init_app(480).unwrap())
       .add_plugins(DefaultPlugins)
-      .add_plugins(SteamworksPlugin::new(AppId(480)))
       .add_systems(Startup, steam_system)
       .run()
 }
@@ -88,14 +84,14 @@ fn main() {
 
 ## Bevy Version Supported
  
-| Bevy Version | bevy\_steamworks |
-| :----------- | :--------------- |
-| 0.13         | 0.10             |
-| 0.12         | 0.9              |
-| 0.11         | 0.8              |
-| 0.10         | 0.7              |
-| 0.9          | 0.6              |
-| 0.8          | 0.5              |
-| 0.7          | 0.4              |
-| 0.6          | 0.2, 0.3         |
-| 0.5          | 0.1              |
+|Bevy Version |bevy\_steamworks|
+|:------------|:---------------|
+|0.13         |0.10, 0.11      |
+|0.12         |0.9             |
+|0.11         |0.8             |
+|0.10         |0.7             |
+|0.9          |0.6             |
+|0.8          |0.5             |
+|0.7          |0.4             |
+|0.6          |0.2, 0.3        |
+|0.5          |0.1             |

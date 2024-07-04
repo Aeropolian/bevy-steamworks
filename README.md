@@ -25,6 +25,13 @@ If you wish to enable serde support add the following:
 bevy-steamworks = { version = "0.9", features = ["serde"] }
 ```
 
+If you wish to enable serde support add the following:
+
+```toml
+[dependencies]
+bevy-steamworks = { version = "0.9", features = ["serde"] }
+```
+
 ## Usage
 
 To add the plugin to your app, simply add the `SteamworksPlugin` to your

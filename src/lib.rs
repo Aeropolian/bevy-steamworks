@@ -93,6 +93,26 @@ pub use steamworks::{
     UGCStatisticType, UGCType, UpdateHandle, UpdateStatus, UpdateWatchHandle, UploadScoreMethod,
     User, UserAchievementStored, UserList, UserListOrder, UserRestriction, UserStats,
     UserStatsReceived, UserStatsStored, Utils, ValidateAuthTicketResponse, RESULTS_PER_PAGE, UGC,
+    AuthTicket, Callback, ChatMemberStateChange, ComparisonFilter, CreateQueryError,
+    DistanceFilter, DownloadItemResult, FileType, FloatingGamepadTextInputDismissed,
+    FloatingGamepadTextInputMode, Friend, FriendFlags, FriendGame, FriendState, Friends, GameId,
+    GameLobbyJoinRequested, GamepadTextInputDismissed, GamepadTextInputLineMode,
+    GamepadTextInputMode, Input, InstallInfo, InvalidErrorCode, ItemState, Leaderboard,
+    LeaderboardDataRequest, LeaderboardDisplayType, LeaderboardEntry, LeaderboardScoreUploaded,
+    LeaderboardSortMethod, LobbyChatUpdate, LobbyDataUpdate, LobbyId, LobbyKey,
+    LobbyKeyTooLongError, LobbyListFilter, LobbyType, Manager, Matchmaking,
+    MicroTxnAuthorizationResponse, NearFilter, NearFilters, Networking, NotificationPosition,
+    NumberFilter, NumberFilters, OverlayToStoreFlag, P2PSessionConnectFail, P2PSessionRequest,
+    PersonaChange, PersonaStateChange, PublishedFileId, PublishedFileVisibility, QueryHandle,
+    QueryResult, QueryResults, RemotePlay, RemotePlayConnected, RemotePlayDisconnected,
+    RemotePlaySession, RemotePlaySessionId, RemoteStorage, SIResult, SResult, SendType, Server,
+    ServerManager, ServerMode, SingleClient, SteamAPIInitError, SteamDeviceFormFactor, SteamError,
+    SteamFile, SteamFileInfo, SteamFileReader, SteamFileWriter, SteamId, SteamServerConnectFailure,
+    SteamServersConnected, SteamServersDisconnected, StringFilter, StringFilterKind, StringFilters,
+    TicketForWebApiResponse, UGCContentDescriptorID, UGCQueryType, UGCStatisticType, UGCType,
+    UpdateHandle, UpdateStatus, UpdateWatchHandle, UploadScoreMethod, User, UserAchievementStored,
+    UserList, UserListOrder, UserRestriction, UserStats, UserStatsReceived, UserStatsStored, Utils,
+    ValidateAuthTicketResponse, RESULTS_PER_PAGE, UGC,
 };
 
 #[derive(Resource)]
@@ -107,15 +127,24 @@ struct SteamEvents {
 pub enum SteamworksEvent {
     AuthSessionTicketResponse(steamworks::AuthSessionTicketResponse),
     DownloadItemResult(steamworks::DownloadItemResult),
+    FakeIPResult(steamworks::networking_sockets::FakeIPResult),
     GameLobbyJoinRequested(steamworks::GameLobbyJoinRequested),
+    GamepadTextInputDismissed(steamworks::GamepadTextInputDismissed),
+    FloatingGamepadTextInputDismissed(steamworks::FloatingGamepadTextInputDismissed),
     LobbyChatUpdate(steamworks::LobbyChatUpdate),
+    LobbyChatMsg(steamworks::LobbyChatMsg),
+    LobbyDataUpdate(steamworks::LobbyDataUpdate),
+    NetConnectionStatusChanged(steamworks::networking_types::NetConnectionStatusChanged),
     P2PSessionConnectFail(steamworks::P2PSessionConnectFail),
     P2PSessionRequest(steamworks::P2PSessionRequest),
     PersonaStateChange(steamworks::PersonaStateChange),
+    RemotePlayConnected(steamworks::RemotePlayConnected),
+    RemotePlayDisconnected(steamworks::RemotePlayDisconnected),
     SteamServerConnectFailure(steamworks::SteamServerConnectFailure),
     SteamServersConnected(steamworks::SteamServersConnected),
     SteamServersDisconnected(steamworks::SteamServersDisconnected),
     TicketForWebApiResponse(steamworks::TicketForWebApiResponse),
+    MicroTxnAuthorizationResponse(steamworks::MicroTxnAuthorizationResponse),
     UserAchievementStored(steamworks::UserAchievementStored),
     UserStatsReceived(steamworks::UserStatsReceived),
     UserStatsStored(steamworks::UserStatsStored),
@@ -123,14 +152,14 @@ pub enum SteamworksEvent {
 }
 
 macro_rules! register_event_callbacks {
-    ($client: ident, $($event_name: ident),+) => {
+    ($client: ident, $($event_name:ident: $event_ty:ty),+ $(,)?) => {
         {
             let pending = Arc::new(SyncUnsafeCell::new(Vec::new()));
             SteamEvents {
                 _callbacks: vec![
                     $({
                         let pending_in = pending.clone();
-                        $client.register_callback::<steamworks::$event_name, _>(move |evt| {
+                        $client.register_callback::<$event_ty, _>(move |evt| {
                             // SAFETY: The callback is only called during `run_steam_callbacks` which cannot run
                             // while any of the flush_events systems are running. This cannot alias.
                             unsafe {
